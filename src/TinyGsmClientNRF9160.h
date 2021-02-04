@@ -357,6 +357,7 @@ class TinyGsmNrf9160 : public TinyGsmModem<TinyGsmNrf9160>,
     // set modem in offline mode
     sendAT(GF("+CFUN=4"));
     waitResponse();
+    return true;
   }
 
   bool isGprsConnectedImpl() {
