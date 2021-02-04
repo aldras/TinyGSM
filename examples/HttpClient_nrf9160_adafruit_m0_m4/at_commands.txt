@@ -1,0 +1,162 @@
+information commands
+AT+CGMR
+AT+CGPADDR
+AT+CGDCONT?
+AT+CGCONTRDP=0
+
+
+firmware check command
+AT+CGMR
+
+check at command version for serial lte modem (SLM)
+AT#XSLMVER
+currently v1.5
+
+disable modem
+AT+CFUN=0
+
+enable modem
+AT+CFUN=1
+
+set in airplane mode
+AT+CFUN=4
+
+check apn
+AT+CGDCONT?
+
+set apn
+AT+CGDCONT=0,"IP","iijmio.jp"
+
+AT+CFUN=0                           //Power of the modem every time that you change the access mode LTE-M or NB-IoT
+                                    //This command saves changes to some things like XSYSTEMMODE so it remembers on next powerup
+                                    //Using this after connected to a network will save some network information to allow faster connection next time
+
+AT%XSYSTEMMODE=1,0,1,0              //Enable LTE-M1, Disable NB-IOT, Enable GNSS, no preference (LTE-M1 or NB-IOT)
+
+AT%XSYSTEMMODE=0,1,0,0              //Disable LTE-M1, Enable NB-IOT, Disable GNSS, no preference (LTE-M1 or NB-IOT)
+
+AT+CGDCONT=0,"IP","ibasis.iot"      //Configure APN (Optional)
+
+AT%XBANDLOCK=1,"10001000000000000"  //Lock the specific band for your testing, put 1 at the position of specific band (17 and 13 on this example, this is Optional)
+
+AT+CPSMS=0                          //Disable PSM
+
+AT+CFUN=1                           //Enable modem
+
+AT%XSIM?                            //Enable UICC
+
+AT+CFUN?                            //Register
+
+AT+COPS?                            //Search network available
+
+
+
+AT%XSYSTEMMODE=0,1,1,0  (to switch to NB-IoT network)
+
+AT%XEPCO=0 (To use legacy PCO, since not all networks support ePCO)
+
+
+
+check connection state
+AT+CEREG
+
+
+check ip address
+AT+CGPADDR
+
+AT+CGDCONT?
+
+check dns address
+AT+CGCONTRDP=0
+
+set dns server to google dns
+134744072 (8.8.8.8) converted to uint32
+AT+CGCONTRDP=0,,"internet","","","10.0.0.1","10.0.0.2",,,,,1028
+
+//change to legacy mode
+AT%XEPCO=0
+
+lookup dns
+AT+CDNSGIP="www.baidu.com"
+
+docomo required settings
+AT+CFUN=0
+AT%XSYSTEMMODE=1,0,1,0              //Enable LTE-M1, Disable NB-IOT, Enable GNSS, no preference (LTE-M1 or NB-IOT)
+AT+CGDCONT=0,"IP","iijmio.jp"       //APN setting
+AT+CFUN=1
+
+sony (au) required settings
+AT+CFUN=0
+AT%XSYSTEMMODE=1,0,1,0              //Enable LTE-M1, Disable NB-IOT, Enable GNSS, no preference (LTE-M1 or NB-IOT)
+AT+CGDCONT=0,"IP","4gn.jp"          //APN setting
+AT+CGAUTH=0,2,"mb_lte@snc","snc"
+AT+CFUN=1
+
+biglobe (docomo)
+AT+CFUN=0
+AT%XSYSTEMMODE=1,0,1,0              //Enable LTE-M1, Disable NB-IOT, Enable GNSS, no preference (LTE-M1 or NB-IOT)
+AT+CGDCONT=0,"IP","biglobe.jp"          //APN setting
+AT+CGAUTH=0,2,"user","0000"
+AT+CFUN=1
+
+
+
+
+check available commands
+AT+CLAC
+AT#XCLAC
+
+get something from google.com
+Open a TCP socket and connect to the HTTP server on port 80.
+
+AT#XSOCKET=1,1,0
+#XSOCKET: 1, 1, 0, 6
+OK
+
+AT#XCONNECT="google.com",80
+#XCONNECT: 1
+OK
+Send an HTTP request to the server.
+
+AT#XSEND=1,"HEAD / HTTP/1.1"
+#XSEND: 15
+OK
+
+AT#XSEND=0,"0D0A"
+#XSEND: 2
+OK
+
+AT#XSEND=1,"Host: www.google.com:443"
+#XSEND: 24
+OK
+
+AT#XSEND=0,"0D0A"
+#XSEND: 2
+OK
+
+AT#XSEND=1,"Connection: close"
+#XSEND: 17
+OK
+
+AT#XSEND=0,"0D0A0D0A"
+#XSEND: 4
+OK
+Receive the response from the server.
+
+AT#XRECV
+HTTP/1.1 200 OK
+Content-Type: text/html; charset=ISO-8859-1
+[...]
+#XRECV: 1, 576
+OK
+
+AT#XRECV
+[...]
+Connection: close
+#XRECV: 1, 147
+OK
+Close the socket.
+
+AT#XSOCKET=0
+#XSOCKET: 0, closed
+OK
