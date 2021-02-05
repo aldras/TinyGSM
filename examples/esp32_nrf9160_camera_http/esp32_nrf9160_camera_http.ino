@@ -3,20 +3,12 @@
  * 
  * Don't forget to add your GPRS credentials (APN, etc).
  * 
- * Uses Serial1 on the Adafruit M0 basic
+ * Uses HardwareSerial on the ESP32-CAM
  * MAKE SURE THE nRF9160DK "SW1" (VDD_IO) (near the power switch) IS SET TO 3V
- * D0 Serial1 RX, connect to nRF9160 UART TX
- * D1 Serial1 TX, connect to nRF9160 UART RX
- * D6 nRF9160 RESET (active low), connect to nRF9160 RESET
- * THERE IS NO RESET PIN (that works) ON THE nRF9160DK, solder a wire onto the RESET button pin
- * Alternativly, press the RESET button as as the Arduino MCU is
- * being reset, timing must be good.
- * 
- * Uses Serial1 on the Adafruit M4 Grand Central
- * MAKE SURE THE nRF9160DK "SW1" (VDD_IO) (near the power switch) IS SET TO 3V
- * D0 Serial1 RX, connect to nRF9160 UART TX
- * D1 Serial1 TX, connect to nRF9160 UART RX
- * D6 nRF9160 RESET (active low), connect to nRF9160 RESET
+ * IO12 HardwareSerial TX, connect to nRF9160 UART RX
+ * IO13 HardwareSerial RX, connect to nRF9160 UART TX
+ * IO14 Picture take button, short this to GND to automatically take pictures
+ * IO15 nRF9160 RESET (active low), connect to nRF9160 RESET
  * THERE IS NO RESET PIN (that works) ON THE nRF9160DK, solder a wire onto the RESET button pin
  *   Alternativly, press the RESET button as as the Arduino MCU is
  *   being reset, timing must be good.
