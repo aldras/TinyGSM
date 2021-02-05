@@ -1,85 +1,153 @@
-/* The nRF9160 opperates at 3V3, don't use 5 volts with it!
+/**************************************************************
+ * ESP32-CAM example
  * 
- * Download the dev package from https://www.drassal.net/filestore/tinygsm_nrf9160_dev_20210202.zip
- *
- * *** DON'T FORGET 1V8 3V3 switch, change it to 3V to work with 3V3 GPIO!!!
- * *** It is default 1V8 when it comes from the factory!!!
- *  
- *  For these examples an ESP32-CAM was used for the reason that it can send JPEG data through the LTE
- *  connection to test speed and reliability.  Other boards used are the Adafruit Feather M0 basic
- *  and the Adafruit M4 Grand Central, others may work, UART configuration needs to be changed.
+ * Don't forget to add your GPRS credentials (APN, etc).
  * 
- * For this example connect the nRF9160 UART to pins 13 (RX) and 12 (TX) of the ESP32-CAM
- * This can be changed by configuring the Serial object to match your hardware
- * Remove the HardwareSerial define and related HardwareSerial to change to a "normal" serial port
+ * Uses Serial1 on the Adafruit M0 basic
+ * MAKE SURE THE nRF9160DK "SW1" (VDD_IO) (near the power switch) IS SET TO 3V
+ * D0 Serial1 RX, connect to nRF9160 UART TX
+ * D1 Serial1 TX, connect to nRF9160 UART RX
+ * D6 nRF9160 RESET (active low), connect to nRF9160 RESET
+ * THERE IS NO RESET PIN (that works) ON THE nRF9160DK, solder a wire onto the RESET button pin
+ * Alternativly, press the RESET button as as the Arduino MCU is
+ * being reset, timing must be good.
  * 
- * The firmware for the nRF9160 will differ by the board.  For all the firmware the hardware flow control is disabled.
- * It would be good to have hardare flow control, but how do we do it with Atduino???
+ * Uses Serial1 on the Adafruit M4 Grand Central
+ * MAKE SURE THE nRF9160DK "SW1" (VDD_IO) (near the power switch) IS SET TO 3V
+ * D0 Serial1 RX, connect to nRF9160 UART TX
+ * D1 Serial1 TX, connect to nRF9160 UART RX
+ * D6 nRF9160 RESET (active low), connect to nRF9160 RESET
+ * THERE IS NO RESET PIN (that works) ON THE nRF9160DK, solder a wire onto the RESET button pin
+ *   Alternativly, press the RESET button as as the Arduino MCU is
+ *   being reset, timing must be good.
  * 
- * For the nRF9160DK the UART pins are P0.10 (TX) and P0.11 (RX), 115200 or 921600 depending on the HEX file loaded.
- * Besides these pins RESET needs to be connected, in this example RESET is pin 15 of the ESP32-CAM
- * This RESET pin needs to be soldered to soldered to the nRF9160DK, or you need to press the
- * RESET button as TinyGSM attempts to reset the nRF9160.  The RESET header pin does not appear
- * to be connected to the RESET signal of the nRF9160 on the nRF9160DK.
- * Power the nRF9160DK from the USB cable and connect the two ground pins together on ESP32-CAM and nRF9160DK.
- * Also, remember to set the GPIO voltage switch on the nRF9160DK to 3 (actually 3V3), this is SW1 (VDD IO).
+ * Also update the nRF51 board controller chip (only needed one time)
+ * This has not been from Nordic's distribution found here
+ * https://www.nordicsemi.com/Software-and-Tools/Development-Kits/nRF9160-DK/Download#infotabs
+ * MAKE SURE THE "PROG_DEBUG" SWITCH IS SET TO "nrf52" 
+ * nrfjprog -f NRF52 --program nRF9160_DK_board_controller_FW.hex
  * 
- * If using the Feather nRF9160 https://www.jaredwolff.com/store/nrf9160-feather/
- * Then connections to the UART will be on P0.01 (RX) (marked D5 on the PCB) and P0.03 (TX) (marked D7 on the PCB)
- * This was done as an attempt to align the UART pins with the hardware UART pins on the Adafruit Feather M0 basic.
- * The UART speed is 115200 or 921600 depending on the HEX file loaded.  In addition the RESET pin needs to be
- * connected, this is the pin marked "RST" on the Feather nRF9160.
- * 
- * If using the Actinius Icarus IoT Board
- * https://www.actinius.com/icarus
- * https://www.adafruit.com/product/4753
- * Be aware this board does not come with an LTE antenna, you need to order one for it!
- * This board's UART is configured the same as the Feather nRF9160
- * The UART pins are P0.01 (RX) (marked 1 on the PCB), and P0.03 (TX) (marked 3 on the PCB).
- * The reset pin marked "rst" also needs to be connected to the ESP32-CAM.
- * 
- * The following firmware files are included along with source.
- * The nRF Connect development software and the nRF9160 SDK can be downloaded, based off Zephyr.
- * 
- * Updating the modem baseband firmware should also be done if it is not version 1.2.3.
- * 
- * In order to load firmware nrfjprog is required, these below commands have been tested on MacOS but
- * should also work on Linux, Windows should be similar.
- * 
- * The prebuilt firmware can be loaded as follows...
- * For the nRF9160DK the following commands.
- * 
- * 
- * Bring the nRF9160 baseband up to date
- * *** Only have to do this once oer chip ***
- * nRF9160 modem baseband update
- * *** DON'T FORGET 1V8 3V3 switch, change it to 3V to work with 3V3 programming targets!!!
- * *** If programming the nRF9160DK, DON'T FORGET to change the nRF52/nRF91 switch to nRF91 to program the nRF52840
- * python3 nrf9160_baseband/flash_with_logging.py mfw_nrf9160_1.2.3.zip
- * 
- * 
- * *** If programming the nRF9160DK, DON'T FORGET to change the nRF52/nRF91 switch to nRF91 to program the nRF52840
- * *** Reprogram this if you want to change the BAUD rate, or are recompiling and changing the source ***
- * *** DON'T FORGET 1V8 3V3 switch, change it to 3V to work with 3V3 programming targets!!!
- * nrfjprog -f NRF91 --program serial_lte_modem_actinius_icarus_115200_merged.hex --sectorerase
- * nrfjprog -f NRF91 --program serial_lte_modem_actinius_icarus_921600_merged.hex --sectorerase
- * nrfjprog -f NRF91 --program serial_lte_modem_circuitdojo_feather_nrf9160_115200_merged.hex --sectorerase
- * nrfjprog -f NRF91 --program serial_lte_modem_circuitdojo_feather_nrf9160_921600_merged.hex --sectorerase
+ * Firmware with _merged.hex is for nRF Connect Programmer, or nrfjprog
+ * nrfjprog example shown below.
  * nrfjprog -f NRF91 --program serial_lte_modem_nrf9160dk_115200_merged.hex --sectorerase
- * nrfjprog -f NRF91 --program serial_lte_modem_nrf9160dk_921600_merged.hex --sectorerase
  * 
+ * The UART pinout on the nRF9160 varies by firmware
+ * nrf9160dk (nRF9160DK board)
+ *   https://www.nordicsemi.com/Software-and-tools/Development-Kits/nRF9160-DK
+ *   MAKE SURE THE "PROG_DEBUG" SWITCH IS SET TO "nrf91" 
+ *   firmware file: serial_lte_modem_nrf9160dk_115200_app_signed.hex (for nRF Connect Programmer)
+ *   firmware file: serial_lte_modem_nrf9160dk_115200_merged.hex (for nrfjprog)
+ *   10 - UART TX
+ *   11 - UART RX
+ *        hardware flow control disabled
+ *   THERE IS NO RESET PIN (that works) ON THE nRF9160DK, solder a wire onto the RESET button pin
+ *     Alternativly, press the RESET button as as the Arduino MCU is
+ *     being reset, timing must be good.
+ *     
+ * actinius_icarus (attempted to match Adafruit Feather layout for M0 SERCOM3)
+ *   https://www.actinius.com/icarus
+ *   https://www.adafruit.com/product/4753
+ *   MAKE SURE THE "PROG_DEBUG" SWITCH IS SET TO "nrf91" 
+ *   firmware file: serial_lte_modem_actinius_icarus_115200_app_signed.hex (for nRF Connect Programmer)
+ *   firmware file: serial_lte_modem_actinius_icarus_115200_merged.hex (for nrfjprog)
+ *   1   - UART RX
+ *   3   - UART TX
+ *         hardware flow control disabled
+ *   RST - RESET pin
+ *   
+ * circuitdojo_feather_nrf9160 (attempted to match Adafruit Feather layout for M0 SERCOM3)
+ *   https://www.jaredwolff.com/store/nrf9160-feather/
+ *   MAKE SURE THE "PROG_DEBUG" SWITCH IS SET TO "nrf91" 
+ *   firmware file: serial_lte_modem_circuitdojo_feather_nrf9160_115200_app_signed.hex (for nRF Connect Programmer)
+ *   firmware file: serial_lte_modem_circuitdojo_feather_nrf9160_115200_merged.hex (for nrfjprog)
+ *   1   - UART RX (marked D5 on the PCB)
+ *   3   - UART RX (marked D7 on the PCB)
+ *         hardware flow control disabled
+ *   RST - RESET pin
+ *   
+ * The nRF9160 is flexible in that most pins can be routed to
+ * the UART, will require rebuilding the uRF9160 firmware.
  * 
- * If using the nRF9160DK, in addition bring the board controller (nRF52840) up to date
- * *** Only have to do this once per nRF9160DK ***
- * nRF9160DK board controller (nRF52840) firmware
- * *** DON'T FORGET to change the nRF52/nRF91 switch to nRF52 to program the nRF52840
- * nrfjprog -f NRF52 --program nRF9160_DK_board_controller_FW.hex --sectorerase
- */
- 
+ * If using the nRF9160DK the RESET pin is not broken out
+ * and the pin labeled RESET does not appear to reset the
+ * nRF9160.  This is bad, I know, but solder a wire on the RESET
+ * button pin and connect it to pin15 on the M4 Grand Central.
+ * 
+ * The prebuilt nRF9160 firmware is available at the following
+ * address.
+ * 
+ * https://www.drassal.net/filestore/esp32_nrf9160_camera_http_20210203/nrf9160_baseband_20210203.zip
+ * 
+ * Use the nRF Connect Programmer available here.
+ * 
+ * https://www.nordicsemi.com/Software-and-tools/Development-Tools/nRF-Connect-for-desktop
+ * 
+ * First install nRF Connect Desktop, then install the "Programmer"
+ * from the nRF Connect application.
+ * 
+ * FIRMWARE DESCIPTION
+ * There are multiple firmware files, breakdown of the filename
+ * serial_lte_modem_nrf9160dk_115200_app_signed.hex
+ *   "serial_lte_modem" is the project nRF9160 SDK's name
+ *   "nrf9160dk" is board the firmware was built for
+ *   "115200" is the UART speed
+ *   "app_signed" is built for loading through a bootloader
+ * 
+ * serial_lte_modem_nrf9160dk_115200_app_update.bin
+ *   "serial_lte_modem" is the project nRF9160 SDK's name
+ *   "nrf9160dk" is board the firmware was built for
+ *   "115200" is the UART speed
+ *   "app_update" is built for loading through a bootloader
+ *   
+ * serial_lte_modem_nrf9160dk_115200_merged.hex
+ *   "serial_lte_modem" is the project nRF9160 SDK's name
+ *   "nrf9160dk" is board the firmware was built for
+ *   "115200" is the UART speed
+ *   "merged" is built for loading a programmer (JLink, JTAG, etc)
+ *   
+ * The most basic method, if using the nRF9160DK, is to use the
+ * nRF Connect programmer with serial_lte_modem_nrf9160dk_115200_app_signed.hex
+ * 
+ * Be aware this will wipe out any bootloader (if present).
+ * 
+ * Additionally the following command can be used to program
+ * the firmware on the command line.
+ * nrfjprog -f NRF91 --program serial_lte_modem_nrf9160dk_115200_merged.hex --sectorerase
+ * 
+ * If the firmware is working correctly you should get a "Ready"
+ * through the UART a few seconds after reset.
+ * 
+ * The nRF9160 has an ARM Cortex-M33 main MCU and an LTE modem.
+ * The LTE modem runs its own firmware and this occasionally
+ * needs to be updated.
+ * 
+ * After loading the main MCU firmware the following AT command
+ * can be used to display the current baseband version.
+ * AT+CGMR
+ * 
+ * The modem baseband (nRF9160 SiP modem firmware) (version 1.2.3)
+ * used for the above firmware is available at the following address
+ * or directly from Nordic as well.
+ * 
+ * https://www.drassal.net/filestore/esp32_nrf9160_camera_http_20210203/nrf9160_firmware_20210203.zip
+ * https://www.nordicsemi.com/Software-and-Tools/Development-Kits/nRF9160-DK/Download#infotabs
+ * 
+ * Updating the modem baseband is a task in itself, but the files
+ * some directions are included in the above file.
+ * 
+ * The nRF Connect has a built in baseband updater, it should
+ * allow easy updates to the modem baseband using the button
+ * "Update modem" button in the lower right corner.
+ * 
+ * The other method involves using a python3 script available,
+ * in the above link, to perform a manual baseband update.
+ * 
+ **************************************************************/
+
 #include "esp_camera.h"
 #include <TimeLib.h>
 
-#define UPLOAD_HOST        "yourserver.com"
+#define UPLOAD_HOST        "www.yourServer.net"
 #define UPLOAD_PORT        80
 #define UPLOAD_PATH_STORE  "/nrf9160_test/"
 #define UPLOAD_PATH_SCRIPT "/nrf9160_test/upload.php"

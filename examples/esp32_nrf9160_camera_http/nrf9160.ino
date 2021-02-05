@@ -38,17 +38,9 @@ HardwareSerial mySerial(1);
 #define GSM_PIN ""
 
 // Your GPRS credentials, if any
-// SONY (au) SIM
 const char apn[]  = "";
 const char gprsUser[] = "";
 const char gprsPass[] = "";
-
-/*
-// biglobe (docomo) SIM
-const char apn[]  = "biglobe.jp";
-const char gprsUser[] = "user";
-const char gprsPass[] = "0000";
-*/
 
 #include <TinyGsmClient.h>
 
@@ -119,10 +111,8 @@ bool setupModem(void) {
 
 #if TINY_GSM_USE_WIFI
   // Wifi connection parameters must be set before waiting for the network
-  lcdMsg("Setting SSID/password...");
   SerialMon.print(F("Setting SSID/password..."));
   if (!modem.networkConnect(wifiSSID, wifiPass)) {
-    lcdMsgAppend("NG");
     SerialMon.println(" fail");
     delay(10000);
     return false;
@@ -130,9 +120,28 @@ bool setupModem(void) {
   SerialMon.println(" success");
 #endif
 
-#if TINY_GSM_USE_GPRS && defined TINY_GSM_MODEM_NRF9160
-  // The nRF9160 must run the gprsConnect function BEFORE waiting for network!
+#if TINY_GSM_USE_GPRS && (defined TINY_GSM_MODEM_XBEE || defined TINY_GSM_MODEM_NRF9160)
+  // The XBee must run the gprsConnect function BEFORE waiting for network!
   modem.gprsConnect(apn, gprsUser, gprsPass);
+#endif
+
+#if TINY_GSM_USE_GPRS && defined TINY_GSM_MODEM_NRF9160
+  // The nRG9160 must run the gprsConnect function BEFORE waiting for network to set APN information!
+  // GPRS connection parameters are usually set after network registration
+  // GPRS connection parameters are usually set after network registration
+  SerialMon.print("Connecting to APN ");
+  SerialMon.print(apn);
+  SerialMon.print("...");
+  if (!modem.gprsConnect(apn, gprsUser, gprsPass)) {
+    SerialMon.println(F(" [fail]"));
+    SerialMon.println(F("************************"));
+    SerialMon.println(F(" Is GPRS enabled by network provider?"));
+    SerialMon.println(F(" Try checking your card balance."));
+    SerialMon.println(F("************************"));
+    delay(10000);
+    return false;
+  }
+  SerialMon.println(F(" [OK]"));
 #endif
 
   SerialMon.print("Waiting for network...");
@@ -149,7 +158,7 @@ bool setupModem(void) {
   }
   SerialMon.println(F(" [OK]"));
 
-#if TINY_GSM_USE_GPRS
+#if TINY_GSM_USE_GPRS && !defined TINY_GSM_MODEM_NRF9160
   // GPRS connection parameters are usually set after network registration
   SerialMon.print("Connecting to APN ");
   SerialMon.print(apn);
